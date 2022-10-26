@@ -40,7 +40,7 @@ def listen_to_news_from_neighbours():
             if((peer_info_b.decode()).find('HELLO') != -1):
                 print(peer_info_b.decode())
             else:
-                peer_node = peer_info_b[:1].decode() # Description: บข้อมูลชื่อ neighbor node (จาก update_news_to_neighbours คือชื่อ node)
+                peer_node = peer_info_b[:1].decode() # Description: รับข้อมูลชื่อ neighbor node (จาก update_news_to_neighbours คือชื่อ node)
                 peer_dv = peer_info_b[1:].decode() # Description: รับข้อมูลระยะทางไป neighbor node (จาก update_news_to_neighbours คือ cost)
                 # print(node_name + ' recieve information from neighbour: ' + peer_node + ', peer_addr: ' + str(peer_addr))
                 # print('peer distance vector is: ' + peer_dv)
@@ -56,31 +56,32 @@ def listen_to_news_from_neighbours():
                         # print('inf node: ',neighbour_key)
                 print('new local dict of "',node_name,'": ',local_dict)
                 # Recompute distance vector, if the distance from peer to location is smaller, refresh the distance vector
-                for key in dict(local_dict).keys(): # วนตรวจสอบระยะทางที่จะไปหา neighbor ที่สั้นที่สุด
-                    next_hop = key # next-hop คือ neightbor router
-                    distance = local_dict[key] # distance ปัจจุบัน
-                    distance1 = local_dict[key] # เอาไว้เช็คว่า distance ต่างจากเดิมไหม จะได้ output update ออกมา
+                for key in dict(local_dict).keys(): # Description: วนตรวจสอบระยะทางที่จะไปหา neighbor ที่สั้นที่สุด
+                    next_hop = key # Description: next-hop คือ neightbor router
+                    distance = local_dict[key] # Description: distance ปัจจุบัน
+                    distance1 = local_dict[key] # Description: เอาไว้เช็คว่า distance ต่างจากเดิมไหม จะได้ output update ออกมา
 
                     # If currently checked key is the same as peer_node name, then update the distance to 0
-                    if key == peer_node: # ที่ router ตัวเอง
-                        peer_dict[key] = 0 # มี distance = 0 (อยู่ที่เดิม ไม่ได้ไปไหน)
+                    if key == peer_node: #Description:  ที่ router ตัวเอง
+                        peer_dict[key] = 0 # Description: มี distance = 0 (อยู่ที่เดิม ไม่ได้ไปไหน)
                     # If the currently checked key is not in the dictionary of peer's, update the value to infinite
-                    if not key in peer_dict.keys(): # ถ้าเป็น router node ที่ไม่มีในข้อมูลจาก neighbor แสดงว่ายังไปไม่ถึง
-                        peer_dict[key] = float('inf') # เนื่องจากไปไม่ถึงจึงต้อง set ค่าสูงสุดไว้ก่อน
+                    if not key in peer_dict.keys(): # Description: ถ้าเป็น router node ที่ไม่มีในข้อมูลจาก neighbor แสดงว่ายังไปไม่ถึง
+                        peer_dict[key] = float('inf') # Description: เนื่องจากไปไม่ถึงจึงต้อง set ค่าสูงสุดไว้ก่อน
 
                     # If there find nearer distance through the peer_node, update the next_hop to peer_node
-                    # เปรียบเทียบว่าระหว่างระยะทางจากข้อมูลใน routing table ตัวเอง กับ routing จาก เพื่อนบ้าน เส้นทางไหนสั้นกว่ากัน
+                    # Description: เปรียบเทียบว่าระหว่างระยะทางจากข้อมูลใน routing table ตัวเอง กับ routing จาก เพื่อนบ้าน เส้นทางไหนสั้นกว่ากัน
                     if local_dict[key] > peer_dict[node_name] + peer_dict[key] and peer_node in org_local_dict.keys():
-                        local_dict[key] = peer_dict[node_name] + peer_dict[key] # update ระยะทางให้สั้นลงจากเดิม
-                        next_hop = peer_node # ต้องผ่าน neighbour ตัวไหนถึงจะไปถึง
-                        distance1 = peer_dict[node_name] + peer_dict[key] # เก็บค่า distance ใหม่เอาไว้เช็คว่าจะ output ไหม
+                        local_dict[key] = peer_dict[node_name] + peer_dict[key] #Description: update ระยะทางให้สั้นลงจากเดิม
+                        next_hop = peer_node # Description: ต้องผ่าน neighbour ตัวไหนถึงจะไปถึง
+                        distance1 = peer_dict[node_name] + peer_dict[key] # Description: เก็บค่า distance ใหม่เอาไว้เช็คว่าจะ output ไหม
                         update_news_to_neighbours(neighbour_addr, node_name, local_dict)
 
-                    # If the distance and next_hop both changed, update the output distance vector
-                    if distance != distance1: # check ว่า distance เปลี่ยนแปลงไหม ถ้าเปลี่ยน update ใน dict ที่เป็น format ไว้ output
-                        output_dict.update({key: {"distance": local_dict[key], "next_hop": next_hop}}) # function update เอาไว้เพิ่ม/แก้ไขค่าตามkey ใน dict
-                    end_time = time.time() # เวลาที่สิ้นสุดการรับข้อมูล
+                    # Description: If the distance and next_hop both changed, update the output distance vector
+                    if distance != distance1: # Description: check ว่า distance เปลี่ยนแปลงไหม ถ้าเปลี่ยน update ใน dict ที่เป็น format ไว้ output
+                        output_dict.update({key: {"distance": local_dict[key], "next_hop": next_hop}}) # Description: function update เอาไว้เพิ่ม/แก้ไขค่าตามkey ใน dict
+                    end_time = time.time() # Description: เวลาที่สิ้นสุดการรับข้อมูล
                     # print(node_name + ": " + str(output_dict))
+                    # Description: new print format
                     print('At Router ',node_name,', t = 0')
                     print('Dest. Subnet | Next hop |Cost')
                     print('--------------------------------')
@@ -97,7 +98,7 @@ def listen_to_news_from_neighbours():
         except:
             time.sleep(1) # sleep ให้นานกว่านี้หน่อย
             # print('no peers are online') # คิด function hello message
-            hello_message(neighbour_addr,node_name)
+            hello_message(neighbour_addr,node_name) # Description: funcriont hello message
             end_time = time.time()
             #
             if end_time - start_time > 20:
@@ -110,12 +111,13 @@ def listen_to_news_from_neighbours():
 def update_news_to_neighbours(addresses, this_node, dv):
     # print('Start sending local information to neighbors...')
     for addr in addresses:
-        # client process ส่งข้อมูล ไปให้ neightbor address ด้วย routing table ของตัวเอง
+        # Description: client process ส่งข้อมูล ไปให้ neightbor address ด้วย routing table ของตัวเอง
         localInfo_socket.sendto(this_node.encode() + str(dv).encode(), addr) 
 
+# FIXME: เดี๋ยวค่อยทำให้สวยๆ อีกที แต่ตอนนี้ใช้ได้แล้ว มันจะแสดง (ชื่อ router) say HELLO
 def hello_message(addresses, this_node):
     for addr in addresses:
-        # client process ส่งข้อมูล ไปให้ neightbor address ด้วย routing table ของตัวเอง
+        # Description: client process ส่งข้อมูล ไปให้ neightbor address ด้วย hello message ของตัวเอง
         message = this_node+' say HELLO'
         localInfo_socket.sendto(message.encode(), addr) 
 
