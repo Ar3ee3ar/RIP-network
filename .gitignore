@@ -1,0 +1,5 @@
+# ignore output file
+beforeEdit-*_output.json
+
+#ignore venv file
+venv/
