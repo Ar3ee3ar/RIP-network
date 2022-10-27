@@ -3,3 +3,10 @@ beforeEdit-*_output.json
 
 #ignore venv file
 venv/
+
+#ignore test file
+create_topology.py
+test_load_json.py
+
+#ignore cache file
+__pycache__/

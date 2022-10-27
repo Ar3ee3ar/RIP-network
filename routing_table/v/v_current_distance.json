@@ -1,0 +1,1 @@
+{"u": {"distance": 2, "next_hop": "u"}, "w": {"distance": 3, "next_hop": "w"}, "x": {"distance": 3, "next_hop": "u"}, "a": {"distance": 4, "next_hop": "u"}}

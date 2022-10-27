@@ -5,6 +5,8 @@
 # @Software: PyCharm
 import os
 import threading
+import time
+from pynput.keyboard import Key, Listener, Controller,Events
 
 
 def run_file(file):
@@ -19,10 +21,11 @@ if __name__ == '__main__':
     # files = ["./u_main.py", "./v_main.py"]
     # files = ["u_main.py", "x_main.py"]
     # files = ["v_main.py", "x_main.py"]
-    files = ["u","v","w","x"]
+    files = ["u","v","w"]
     for file in files:
         bellman = threading.Thread(target=run_file, args=(file,))
         bellman.start()
+
 
 # TODO:
 # - show network อย่างเดียว ซ่อน router
