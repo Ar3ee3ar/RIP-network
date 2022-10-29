@@ -21,7 +21,7 @@ if __name__ == '__main__':
     # files = ["./u_main.py", "./v_main.py"]
     # files = ["u_main.py", "x_main.py"]
     # files = ["v_main.py", "x_main.py"]
-    files = ["u","v","w"]
+    files = ["u","v","w","x"]
     for file in files:
         bellman = threading.Thread(target=run_file, args=(file,))
         bellman.start()

@@ -1,1 +1,1 @@
-{"u": ["localhost", 65000], "v": ["localhost", 65001], "x": ["localhost", 65003]}
+{"u": {"address": ["127.0.0.1", 65000], "alive": true}, "v": {"address": ["127.0.0.1", 65001], "alive": true}, "x": {"address": ["127.0.0.1", 65003], "alive": true}}
