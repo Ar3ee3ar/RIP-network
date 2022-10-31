@@ -1,1 +1,1 @@
-{"x": {"distance": 1, "next_hop": "x"}, "w": {"distance": 4, "next_hop": "x"}, "v": {"distance": 2, "next_hop": "v"}, "a": {"distance": 2, "next_hop": "x"}}
+{"A": {"distance": 1, "next_hop": "-"}, "N2": {"distance": 1, "next_hop": "-"}, "D": {"distance": 1, "next_hop": "-"}, "C": {"distance": 1, "next_hop": "-"}, "N1": {"distance": 2, "next_hop": "A"}, "N4": {"distance": 2, "next_hop": "A"}, "N3": {"distance": 2, "next_hop": "C"}, "F": {"distance": 2, "next_hop": "C"}, "E": {"distance": 2, "next_hop": "D"}}
