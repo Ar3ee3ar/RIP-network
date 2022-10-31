@@ -1,1 +1,0 @@
-{"x": {"distance": 1, "next_hop": "x", "alive": true}, "w": {"distance": 4, "next_hop": "x", "alive": true}, "v": {"distance": 2, "next_hop": "v", "alive": true}}

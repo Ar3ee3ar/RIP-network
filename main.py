@@ -54,7 +54,7 @@ def listen_to_news_from_neighbours():
             if((peer_info_b.decode()).find('HELLO') != -1):
                 alive_node = (peer_info_b.decode()).split(' ')
                 # output_dict[alive_node[0]]["alive"] = True
-                # port_table[alive_node]["alive"] = True
+                port_table[alive_node[0]]["alive"] = True
                 print(peer_info_b.decode())
                 # output_table = ''
                 # output_table += 'At Router '+str(node_name)+', t = '+str('hello')+'\n'
@@ -133,7 +133,8 @@ def listen_to_news_from_neighbours():
                     output_table += '--------------------------------'+'\n'
                     for key in dict(output_dict).keys():
                         # if(output_dict[key]['alive']):
-                        output_table += str(key)+'           |   '+str(output_dict[key]['next_hop'])+'    |'+str(output_dict[key]['distance'])+'\n'
+                        if(key.find('N') != -1):
+                            output_table += str(key)+'           |   '+str(output_dict[key]['next_hop'])+'    |'+str(output_dict[key]['distance'])+'\n'
                     output_table += '--------------------------------\n\n'
                     print(output_table)
 
@@ -147,24 +148,26 @@ def listen_to_news_from_neighbours():
             # print(type(e))
             if(str(e).find('WinError 10054') != -1):
                 print('wait other router')
+                # print(localInfo_socket)
+                # break
             else:
-                with Events() as events:
-                    event = events.get(10.0)
-                    print('finish wait')
-                    if event is None:
-                        print(time.time())
-                        pass
-                    elif event.key == Key.esc:
-                        command = input('Please enter command :')
-                        if(command == 'del'):
-                            # name_router = input('please enter router name: ')
-                            # delete_router()
-                            pass
-                        if(command == 'break'):
-                            break
-                    else:
-                        pass
-
+                # with Events() as events:
+                #     event = events.get(10.0)
+                #     print('finish wait')
+                #     if event is None:
+                #         print(time.time())
+                #         pass
+                #     elif event.key == Key.esc:
+                #         command = input('Please enter command :')
+                #         if(command == 'del'):
+                #             # name_router = input('please enter router name: ')
+                #             # delete_router()
+                #             pass
+                #         if(command == 'break'):
+                #             break
+                #     else:
+                #         pass
+                time.sleep(10)
                 check_port()
                 end_time = time.time()
                 #
@@ -208,7 +211,7 @@ def check_port():
         # print('key in distabce: ', key)
         if(not(key in local_dict.keys())):
             local_dict[key] = distance_table[key]['distance']
-            output_dict.update({key: {"distance": local_dict[key], "next_hop": node_name}})
+            output_dict.update({key: {"distance": local_dict[key], "next_hop": "-"}})
             have_new_data = True
 
 
@@ -251,7 +254,7 @@ def add_router(peer_node,peer_addr,peer_dv):
     # add distance
     with open('routing_table/'+node_name +'/'+node_name+ '_current_distance.json', 'r') as f:
         distance_from_neighbor = json.load(f)
-    distance_from_neighbor[node_name] = {"distance":peer_dv[node_name], "next_hop":peer_node}
+    distance_from_neighbor[node_name] = {"distance":peer_dv[node_name], "next_hop":"-"}
     local_dict[peer_node] = peer_dv[node_name]
     with open('routing_table/'+node_name +'/'+node_name+ '_current_distance.json', 'w+') as new_distance:
         new_distance.write(json.dumps(distance_from_neighbor))
@@ -298,14 +301,14 @@ def start_routing(neighbour_addr, node_name, local_dict):
     print('<-- receive data to neighbor')
     listen_to_news_from_neighbours()
 
-def start_listening(neighbour_addr, node_name, local_dict):
-    # Description: เข้า server process เพื่อรับข้อมูลจากที่ส่งให้ใน update_news_to_neighbours
-    print('<-- receive data to neighbor')
-    listen_to_news_from_neighbours()
-    # time.sleep(2)
-    # time.sleep(random.randint(1, 5))
-    print('send data to neighbor --->')
-    update_news_to_neighbours(neighbour_addr, node_name, local_dict)
+# def start_listening(neighbour_addr, node_name, local_dict):
+#     # Description: เข้า server process เพื่อรับข้อมูลจากที่ส่งให้ใน update_news_to_neighbours
+#     print('<-- receive data to neighbor')
+#     listen_to_news_from_neighbours()
+#     # time.sleep(2)
+#     # time.sleep(random.randint(1, 5))
+#     print('send data to neighbor --->')
+#     update_news_to_neighbours(neighbour_addr, node_name, local_dict)
 
 def initial_distance():
     temp_obj = {}
@@ -367,7 +370,7 @@ def main():
 
         # Initialize the output dict
         for key in local_dict:
-            output_dict.update({key: {"distance": local_dict[key], "next_hop": key}}) # Description: ทำให้อยู่ใน format ที่จะเอาไว้ส่งต่อได้
+            output_dict.update({key: {"distance": local_dict[key], "next_hop": "-"}}) # Description: ทำให้อยู่ใน format ที่จะเอาไว้ส่งต่อได้
         with open('routing_table/'+node_name +'/'+node_name+ '_current_distance.json', 'w+') as output:
             output.write(json.dumps(output_dict))
         # Description: ส่ง ข้อมูลให้ neighbor(neighbour_addr) บอกว่ามาจาก node ตัวเอง(node_name) กับข้อมูลระยะห่างของตัวเองกับ neighbor (local_dict)
