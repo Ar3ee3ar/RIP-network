@@ -32,6 +32,7 @@ def _argparse():
     parser.add_argument("--node", "-node_name", default='', help="node name")
     parser.add_argument("--add", "-add_node_name", default='', help="add node name")
     parser.add_argument("--delete", "-delete_node_name", default='', help="delete node name")
+    parser.add_argument("--change", "-change_cost", default='', help="change cost")
     arg = parser.parse_args()
     return arg
     
@@ -76,11 +77,9 @@ def listen_to_news_from_neighbours():
                 peer_dict = eval(peer_dv) # Description: ทำให้ cost กลับไปเป็นรูปแบบ json อีกครั้ง (ใช้ eval เพราะรูปแบบที่รับเข้ามาไม่ใช่ json แล้วใช้ json.load ไม่ได้)
                 # print(neighbour_addr)
                 # print(peer_addr)
+                # if node that send information is not in neighbor list add its information
                 if(not peer_addr in neighbour_addr):
                     if(peer_node != node_name):
-                        # print('add new address from : ',peer_node,' address: ',peer_addr)
-                        # neighbour_addr.append(peer_addr) # Description: ให้เก็บไว้ใน array
-                        # port_table.update({peer_node:{"address":peer_addr, "alive": True}})
                         add_router(peer_node,peer_addr,peer_dict)
 
                 # If there are keys in the neighbour that local dict does not have
@@ -89,9 +88,6 @@ def listen_to_news_from_neighbours():
                     # Description: จากข้อมูลที่ได้รับจาก neighbor node ถ้าเจอ router ที่ไม่ใช่เพื่อนบ้านและไม่ใช่เราเอง ให้ set เป็นค่าสูงสุดไว้ก่อน (เพราะยังไม่รู้ทางไป)
                     if (not neighbour_key in local_dict.keys() and neighbour_key != node_name): 
                         local_dict[neighbour_key] = 16 # Description: เพิ่ม node ใหม่ไปใน routing table ของตัวเอง
-                        # if(neighbour_key != node_name):
-                        #     if(not output_dict[neighbour_key]["alive"]):
-                        #         del local_dict[neighbour_key]
 
                 # Recompute distance vector, if the distance from peer to location is smaller, refresh the distance vector
                 for key in dict(local_dict).keys(): # Description: วนตรวจสอบระยะทางที่จะไปหา neighbor ที่สั้นที่สุด
@@ -108,21 +104,20 @@ def listen_to_news_from_neighbours():
 
                     # If there find nearer distance through the peer_node, update the next_hop to peer_node
                     # Description: เปรียบเทียบว่าระหว่างระยะทางจากข้อมูลใน routing table ตัวเอง กับ routing จาก เพื่อนบ้าน เส้นทางไหนสั้นกว่ากัน
-                    print('from : ',peer_node,' => ',peer_dict)
-                    print('from : ',node_name,' => ',local_dict)
+                    # print('from : ',peer_node,' => ',peer_dict)
+                    # print('from : ',node_name,' => ',local_dict)
                     if local_dict[key] > peer_dict[node_name] + peer_dict[key] and peer_node in org_local_dict.keys():
                         local_dict[key] = peer_dict[node_name] + peer_dict[key] #Description: update ระยะทางให้สั้นลงจากเดิม
                         next_hop = peer_node # Description: ต้องผ่าน neighbour ตัวไหนถึงจะไปถึง
                         distance1 = peer_dict[node_name] + peer_dict[key] # Description: เก็บค่า distance ใหม่เอาไว้เช็คว่าจะ output ไหม
                         update_news_to_neighbours(neighbour_addr, node_name, local_dict)
 
+
                     # Description: If the distance and next_hop both changed, update the output distance vector
                     if distance != distance1: # Description: check ว่า distance เปลี่ยนแปลงไหม ถ้าเปลี่ยน update ใน dict ที่เป็น format ไว้ output
                         output_dict.update({key: {"distance": local_dict[key], "next_hop": next_hop}}) # Description: function update เอาไว้เพิ่ม/แก้ไขค่าตามkey ใน dict
                         with open('routing_table/'+node_name +'/'+node_name+ '_current_distance.json', 'w+') as output:
                             output.write(json.dumps(output_dict))
-
-                end_time = time.time() # Description: เวลาที่สิ้นสุดการรับข้อมูล
                 # Description: new print format
                 round = round + 1
                 output_table = ''
@@ -137,6 +132,7 @@ def listen_to_news_from_neighbours():
                 print(output_table)
                 # time.sleep(2)
 
+                end_time = time.time() # Description: เวลาที่สิ้นสุดการรับข้อมูล
                 # If there are no more updates in the local dict and the result converges, write the final jason file
                 if end_time - start_time > 20: # ถ้าเวลาผ่านไป 20 s แล้วทำการเขยนข้อมูลลงไปใน json
                     with open('routing_table/'+node_name +'/'+node_name+ '_output.json', 'w+') as output:
@@ -156,20 +152,28 @@ def listen_to_news_from_neighbours():
                 print('in timeout phase')
                 # hello_phase = False
                 print(port_table)
-                for org_neighbor_node in (org_local_dict.copy()).keys():
+                delete_key = []
+                delete_neighbor_path = []
+                for org_neighbor_node in org_local_dict.keys():
                     if(org_neighbor_node.find('N') == -1):
                         if(not port_table[org_neighbor_node]["alive"]):
                             # change distance
                             # del local_dict[org_neighbor_node]
-                            local_dict[org_neighbor_node] = 16
                             # del org_local_dict[org_neighbor_node]
-                            org_local_dict[org_neighbor_node] = 16
+                            delete_key.append(org_neighbor_node)
                             for key in output_dict.keys():
                                 if(output_dict[key]['next_hop'] == org_neighbor_node):
-                                    local_dict[key] = output_dict[key]['distance'] + local_dict[org_neighbor_node]
-                                    output_dict[key]['distance'] = output_dict[key]['distance'] + local_dict[org_neighbor_node]
-                            with open('routing_table/'+node_name +'/'+node_name+ '_current_distance.json', 'w+') as new_distance:
-                                new_distance.write(json.dumps(local_dict))
+                                    delete_neighbor_path.append(key)
+                                    # del local_dict[key]
+                                    # del output_dict[key]['distance']
+                for key in delete_key:
+                    del local_dict[key]
+                    del org_local_dict[key]
+                for neighbor_path in delete_neighbor_path:
+                    del local_dict[neighbor_path]
+                    del output_dict[neighbor_path]
+                with open('routing_table/'+node_name +'/'+node_name+ '_current_distance.json', 'w+') as new_distance:
+                    new_distance.write(json.dumps(local_dict))
                             # change port
                             # neighbour_addr.remove(tuple(port_table[org_neighbor_node]["address"]))
                             # del port_table[org_neighbor_node]
@@ -220,28 +224,47 @@ def check_port():
     global port_table
     have_new_data  = False
     # update port to "neighbour_addr"
-    with open('routing_table/'+node_name +'/'+node_name+ '_current_ip.json', 'r') as f:
-        port_table = json.load(f)
-    for key in port_table.keys():
-        # print('address in ip: ',port_table[key])
-        if(not(tuple(port_table[key]["address"]) in neighbour_addr)):
-            neighbour_addr.append(tuple(port_table[key]["address"]))
+    # with open('routing_table/'+node_name +'/'+node_name+ '_current_ip.json', 'r') as f:
+    #     port_table = json.load(f)
+    # for key in port_table.keys():
+    #     # print('address in ip: ',port_table[key])
+    #     if(not(tuple(port_table[key]["address"]) in neighbour_addr)):
+    #         neighbour_addr.append(tuple(port_table[key]["address"]))
+    #         have_new_data = True
+
+    # # neighbour_addr = {x:neighbour_addr[x] for x in neighbour_addr if x in port_table}
+    # # print('check ip : ',neighbour_addr)
+
+    # # update distance for "local_dict"
+    # with open('routing_table/'+node_name +'/'+node_name+ '_current_distance.json', 'r') as f:
+    #     distance_table = json.load(f)
+    # for key in distance_table.keys():
+    #     # print('key in distabce: ', key)
+    #     if(not(key in local_dict.keys())):
+    #         local_dict[key] = distance_table[key]['distance']
+    #         output_dict.update({key: {"distance": local_dict[key], "next_hop": "-"}})
+    #         have_new_data = True
+
+    # check distance
+    with open('routing_table/'+node_name +'/'+node_name+ '_distance.json', 'r') as f:
+        new_dict = json.load(f) #Description: อ่านไฟล์ distance มาใส่ local_dict
+    # update direct link
+    update_node = []
+    for key in new_dict.keys():
+        if(new_dict[key] != org_local_dict[key]):
+            local_dict[key] = new_dict[key]
+            org_local_dict[key] = new_dict[key]
+            output_dict[key]["distance"] = new_dict[key]
             have_new_data = True
-
-    # neighbour_addr = {x:neighbour_addr[x] for x in neighbour_addr if x in port_table}
-    # print('check ip : ',neighbour_addr)
-
-    # update distance for "local_dict"
-    with open('routing_table/'+node_name +'/'+node_name+ '_current_distance.json', 'r') as f:
-        distance_table = json.load(f)
-    for key in distance_table.keys():
-        # print('key in distabce: ', key)
-        if(not(key in local_dict.keys())):
-            local_dict[key] = distance_table[key]['distance']
-            output_dict.update({key: {"distance": local_dict[key], "next_hop": "-"}})
-            have_new_data = True
-
-
+            with open('routing_table/'+node_name +'/'+node_name+ '_distance.json', 'w') as new_distance:
+                new_distance.write(json.dumps(org_local_dict))
+            update_node.append(key)
+    # update neighbor of change link
+    for update_key in update_node:
+        for key in output_dict.keys():
+            if(output_dict[key]['next_hop'] == update_key):
+                output_dict[key]['distance'] = output_dict[key]['distance'] + local_dict[update_key]
+                local_dict[key] = local_dict[key] + local_dict[update_key]
     # local_dict = {x:local_dict[x] for x in local_dict if x in distance_table}
     print('check distance: ',local_dict)
     # start_routing(neighbour_addr, node_name, local_dict)
@@ -297,6 +320,27 @@ def add_router(peer_node,peer_addr,peer_dv):
     neighbour_addr.append(peer_addr) # Description: ให้เก็บไว้ใน array
     port_table.update({peer_node:{"address":peer_addr, "alive": True}})
     start_routing(neighbour_addr, node_name, local_dict)
+
+def change_cost_table(source_node,dest_node,new_cost):
+    global local_dict
+    global org_local_dict
+
+    if(source_node.find('N')==-1 and dest_node.find('N')==-1):
+        # read file source and dest
+        with open('routing_table/'+source_node +'/'+source_node+ '_distance.json', 'r') as f:
+            new_dict_source = json.load(f) #Description: อ่านไฟล์ distance มาใส่ local_dict
+        with open('routing_table/'+dest_node +'/'+dest_node+ '_distance.json', 'r') as f:
+            new_dict_dest = json.load(f) #Description: อ่านไฟล์ distance มาใส่ local_dict
+        # set new cost in source and dest.
+        new_dict_source[dest_node] = new_cost
+        new_dict_dest[source_node] = new_cost
+        # write new cost to source and dest. file
+        with open('routing_table/'+source_node +'/'+source_node+ '_distance.json', 'w') as new_distance_source:
+            new_distance_source.write(json.dumps(new_dict_source))
+        with open('routing_table/'+dest_node +'/'+dest_node+ '_distance.json', 'w') as new_distance_dest:
+            new_distance_dest.write(json.dumps(new_dict_dest))
+    elif(source_node.find('N') != -1):
+        pass
 
 # def delete_router():
 #     global local_dict
@@ -364,6 +408,7 @@ def main():
     node_name = _argparse().node
     add_node_name = _argparse().add
     delete_node_name = _argparse().delete
+    change_cost = _argparse().change
 
 
     if(add_node_name != '' or node_name != ''):
@@ -419,10 +464,19 @@ def main():
     #         local_dict.update({key:distance_table[key]})
     #     print('delete function')
     #     delete_router()
+    else:
+        change_list = change_cost.split(' ')
+        source_node = change_list[0]
+        dest_node = change_list[1]
+        new_cost = int(change_list[2])
+        print(source_node)
+        print(dest_node)
+        print(type(new_cost)) 
+        change_cost_table(source_node,dest_node,new_cost)
+
 
 
 if __name__ == '__main__':
     localInfo_socket = socket.socket(AF_INET, SOCK_DGRAM)
     localInfo_socket.settimeout(10)
     main()
-
