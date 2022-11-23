@@ -118,20 +118,27 @@ def listen_to_news_from_neighbours():
                     # print('from : ',peer_node,' => ',peer_dict)
                     # print('from : ',node_name,' => ',local_dict)
                     # วนอัพเดตค่า routing table ถ้ามี cost เปลี่ยน
+                    infinity_hop_list = []
                     for link_key in output_dict.keys():
                         for info_key in peer_dict.keys():
                             # check หา routing table ที่มี dest. ตรงกับ ข้อมูลจากเพื่อนบ้าน และ มี next_hop ตรงกับ router ที่ส่งข้อมูลมา
-                            if(info_key == link_key and output_dict[link_key]['next_hop'] == peer_node and peer_dict[info_key] + local_dict[peer_node] < 16):
+                            if(info_key == link_key and output_dict[link_key]['next_hop'] == peer_node and peer_dict[info_key] + local_dict[peer_node] <= 16):
                                 # print('change cost : ',link_key,' -> ',peer_node,' from: ',output_dict[link_key]['distance'],' to ',peer_dict[info_key] + local_dict[peer_node])
                                 if(output_dict[link_key]['distance'] != peer_dict[info_key] + local_dict[peer_node]):
-                                    output_dict[link_key]['distance'] = peer_dict[info_key] + local_dict[peer_node]
-                                    local_dict[link_key] = output_dict[link_key]['distance']
-                                    round = round + 1
-                                    print_routing_table(node_name,round,output_dict)
-                                    update_news_to_neighbours(neighbour_addr, node_name, local_dict)
-
+                                    if(peer_dict[info_key] + local_dict[peer_node]< 16):
+                                        output_dict[link_key]['distance'] = peer_dict[info_key] + local_dict[peer_node]
+                                        local_dict[link_key] = output_dict[link_key]['distance']
+                                        round = round + 1
+                                        print_routing_table(node_name,round,output_dict)
+                                        update_news_to_neighbours(neighbour_addr, node_name, local_dict)
+                                    else:
+                                        # infinity_hop_list.append(link_key)
+                                        pass
+                    # for infinity_node in infinity_hop_list:
+                    #     del local_dict[infinity_node]
+                    #     del output_dict[infinity_node]
                     # print('neighbor ',node_name,'->',key,' : ',local_dict[key],' > ',peer_dict[node_name] + peer_dict[key])
-                    if local_dict[key] > peer_dict[node_name] + peer_dict[key] and peer_node in org_local_dict.keys() and peer_dict[node_name] + peer_dict[key] < 16:
+                    if local_dict[key] > peer_dict[node_name] + peer_dict[key] and peer_node in org_local_dict.keys() and peer_dict[node_name] + peer_dict[key] <= 16:
                         local_dict[key] = peer_dict[node_name] + peer_dict[key] #Description: update ระยะทางให้สั้นลงจากเดิม
                         next_hop = peer_node # Description: ต้องผ่าน neighbour ตัวไหนถึงจะไปถึง
                         # print('next_hop : ',next_hop)
@@ -141,6 +148,7 @@ def listen_to_news_from_neighbours():
 
                     # Description: If the distance and next_hop both changed, update the output distance vector
                     if (distance != distance1): # Description: check ว่า distance เปลี่ยนแปลงไหม ถ้าเปลี่ยน update ใน dict ที่เป็น format ไว้ output
+                        # output_dict.update({key: {"distance": 16, "next_hop": next_hop}}) # Description: (poison reverse) function update เอาไว้เพิ่ม/แก้ไขค่าตามkey ใน dict
                         output_dict.update({key: {"distance": local_dict[key], "next_hop": next_hop}}) # Description: function update เอาไว้เพิ่ม/แก้ไขค่าตามkey ใน dict
                         with open('routing_table/'+node_name +'/'+node_name+ '_current_distance.json', 'w+') as output:
                             output.write(json.dumps(output_dict))
@@ -303,7 +311,8 @@ def check_port():
         #     if(key.find('N') == -1):
         #         port_table[key]["alive"] = time.time()
         hello_message(neighbour_addr, node_name)
-        listen_to_news_from_neighbours()
+        start_routing(neighbour_addr, node_name, local_dict)
+        # listen_to_news_from_neighbours()
     # start_routing(neighbour_addr, node_name, local_dict)
 
 def update_news_to_neighbours(addresses, this_node, dv):
