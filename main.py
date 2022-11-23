@@ -36,7 +36,17 @@ def _argparse():
     arg = parser.parse_args()
     return arg
     
-
+def print_routing_table(node_name,round,output_dict):
+    output_table = ''
+    output_table += 'At Router '+str(node_name)+', t = '+str(round)+'\n'
+    output_table += 'Dest. Subnet | Next hop |Cost'+'\n'
+    output_table += '--------------------------------'+'\n'
+    for key in dict(output_dict).keys():
+        # if(output_dict[key]['alive']):
+        if(key.find('N') != -1):
+            output_table += str(key)+'           |   '+str(output_dict[key]['next_hop'])+'    |'+str(output_dict[key]['distance'])+'\n'
+    output_table += '--------------------------------\n\n'
+    print(output_table)
 
 def listen_to_news_from_neighbours():
     global node_name
@@ -45,6 +55,7 @@ def listen_to_news_from_neighbours():
     global neighbour_addr
     global output_dict
     global port_table
+    global round
     round = -1
     hello_phase = False
     start_time = time.time() #เวลาที่เริ่มต้นรับข้อมูล
@@ -106,37 +117,38 @@ def listen_to_news_from_neighbours():
                     # Description: เปรียบเทียบว่าระหว่างระยะทางจากข้อมูลใน routing table ตัวเอง กับ routing จาก เพื่อนบ้าน เส้นทางไหนสั้นกว่ากัน
                     # print('from : ',peer_node,' => ',peer_dict)
                     # print('from : ',node_name,' => ',local_dict)
-                    try:
-                        original_next_hop = output_dict[key]['next_hop']
-                    except:
-                        original_next_hop = next_hop
+                    # วนอัพเดตค่า routing table ถ้ามี cost เปลี่ยน
+                    for link_key in output_dict.keys():
+                        for info_key in peer_dict.keys():
+                            # check หา routing table ที่มี dest. ตรงกับ ข้อมูลจากเพื่อนบ้าน และ มี next_hop ตรงกับ router ที่ส่งข้อมูลมา
+                            if(info_key == link_key and output_dict[link_key]['next_hop'] == peer_node):
+                                # print('change cost : ',link_key,' -> ',peer_node,' from: ',output_dict[link_key]['distance'],' to ',peer_dict[info_key] + local_dict[peer_node])
+                                if(output_dict[link_key]['distance'] != peer_dict[info_key] + local_dict[peer_node]):
+                                    output_dict[link_key]['distance'] = peer_dict[info_key] + local_dict[peer_node]
+                                    local_dict[link_key] = output_dict[link_key]['distance']
+                                    round = round + 1
+                                    print_routing_table(node_name,round,output_dict)
+                                    update_news_to_neighbours(neighbour_addr, node_name, local_dict)
 
+                    # print('neighbor ',node_name,'->',key,' : ',local_dict[key],' > ',peer_dict[node_name] + peer_dict[key])
                     if local_dict[key] > peer_dict[node_name] + peer_dict[key] and peer_node in org_local_dict.keys():
                         local_dict[key] = peer_dict[node_name] + peer_dict[key] #Description: update ระยะทางให้สั้นลงจากเดิม
                         next_hop = peer_node # Description: ต้องผ่าน neighbour ตัวไหนถึงจะไปถึง
-                        print('next_hop : ',next_hop)
+                        # print('next_hop : ',next_hop)
                         distance1 = peer_dict[node_name] + peer_dict[key] # Description: เก็บค่า distance ใหม่เอาไว้เช็คว่าจะ output ไหม
                         update_news_to_neighbours(neighbour_addr, node_name, local_dict)
 
 
                     # Description: If the distance and next_hop both changed, update the output distance vector
-                    if distance != distance1: # Description: check ว่า distance เปลี่ยนแปลงไหม ถ้าเปลี่ยน update ใน dict ที่เป็น format ไว้ output
+                    if (distance != distance1): # Description: check ว่า distance เปลี่ยนแปลงไหม ถ้าเปลี่ยน update ใน dict ที่เป็น format ไว้ output
                         output_dict.update({key: {"distance": local_dict[key], "next_hop": next_hop}}) # Description: function update เอาไว้เพิ่ม/แก้ไขค่าตามkey ใน dict
                         with open('routing_table/'+node_name +'/'+node_name+ '_current_distance.json', 'w+') as output:
                             output.write(json.dumps(output_dict))
-                # Description: new print format
-                round = round + 1
-                output_table = ''
-                output_table += 'At Router '+str(node_name)+', t = '+str(round)+'\n'
-                output_table += 'Dest. Subnet | Next hop |Cost'+'\n'
-                output_table += '--------------------------------'+'\n'
-                for key in dict(output_dict).keys():
-                    # if(output_dict[key]['alive']):
-                    if(key.find('N') != -1):
-                        output_table += str(key)+'           |   '+str(output_dict[key]['next_hop'])+'    |'+str(output_dict[key]['distance'])+'\n'
-                output_table += '--------------------------------\n\n'
-                print(output_table)
-                # time.sleep(2)
+                        # Description: new print format
+                        round = round + 1
+                        print_routing_table(node_name,round,output_dict)
+                        
+                        # time.sleep(2)
 
                 end_time = time.time() # Description: เวลาที่สิ้นสุดการรับข้อมูล
                 # If there are no more updates in the local dict and the result converges, write the final jason file
@@ -228,6 +240,7 @@ def check_port():
     global neighbour_addr
     global output_dict
     global port_table
+    global round
     have_new_data  = False
     # update port to "neighbour_addr"
     # with open('routing_table/'+node_name +'/'+node_name+ '_current_ip.json', 'r') as f:
@@ -273,6 +286,8 @@ def check_port():
                     output_dict[key]['distance'] = output_dict[key]['distance'] + local_dict[update_key]
                     local_dict[key] = local_dict[key] + local_dict[update_key]
     # local_dict = {x:local_dict[x] for x in local_dict if x in distance_table}
+    round = round + 1
+    print_routing_table(node_name,round,output_dict)
     print('check distance: ',local_dict)
     # start_routing(neighbour_addr, node_name, local_dict)
     if(have_new_data):
